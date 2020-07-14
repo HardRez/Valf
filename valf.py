@@ -92,7 +92,6 @@ class MainWindow(Gtk.Window):
 
         # need to rearrange data for every row.
         else:
-            numberOfColumnsBefore = len(self.columns)
             numberOfNewAttr = len(newHost) - len(self.columns)
 
             for i in range(len(self.rows)):
