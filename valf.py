@@ -4,8 +4,6 @@ import os
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
-# github check
-
 class MainWindow(Gtk.Window):
     def __init__(self , path):
         Gtk.Window.__init__(self, title="Hosts")
@@ -87,6 +85,9 @@ class MainWindow(Gtk.Window):
         self.grid.attach(self.emptyLabel, 1 , 0 , 2, 1)
 
     def popUpCallBack(self, newHost, newAttr):
+
+        print(len(newHost))
+
         # no new attributes.   
         if len(newHost) == len(self.columns):
             self.hostDataListStore.append(newHost)
@@ -130,8 +131,8 @@ class MainWindow(Gtk.Window):
             for i in range(numberOfNewAttr):
                 self.hostTreeView.insert_column_with_attributes(-1, newAttr[i].get_text(),renderer)"""
 
-            # update config
-            self.updateConfig()
+        # update config
+        self.updateConfig()
 
 
     def on_add_clicked(self, widget):
@@ -188,9 +189,10 @@ class MainWindow(Gtk.Window):
         with open("config", "w") as fileObject:
             for row in self.rows:
                 for i,column in enumerate(self.columns):
-                    line = column + " " + row[i] +"\n"
-                    fileObject.write(line)
-                
+                    if row[i] != "-":
+                        line = column + " " + row[i] +"\n"
+                        fileObject.write(line)
+                    
                 fileObject.write("\n")
 
 
@@ -269,7 +271,7 @@ class PopUpWindow(Gtk.Window):
         self.newHost = []
 
         for i in range(len(self.columns)):
-            if self.newAttributesValues[i]:
+            if self.newAttributesValues[i].get_text().strip() != "":
                 self.newHost.append(self.newAttributesValues[i].get_text())
             else:
                 self.newHost.append("-")
