@@ -86,8 +86,6 @@ class MainWindow(Gtk.Window):
 
     def popUpCallBack(self, newHost, newAttr):
 
-        print(len(newHost))
-
         # no new attributes.   
         if len(newHost) == len(self.columns):
             self.hostDataListStore.append(newHost)
@@ -99,37 +97,14 @@ class MainWindow(Gtk.Window):
             for i in range(len(self.rows)):
                 self.rows[i].extend(["-"] * numberOfNewAttr)
 
-            self.rows.append(newHost)
 
             for new_attr in newAttr:
                 self.columns.append(new_attr.get_text())
             
+        self.rows.append(newHost)
 
-            # delete all columns
-            for column in self.hostTreeView.get_columns():
-                self.hostTreeView.remove_column(column)
-
-            # create ListStore from scratch.
-            argType = [str] * len(self.columns)
-            self.hostDataListStore = Gtk.ListStore(*argType)
-
-            # add rows to the list store
-            for row in self.rows:
-                self.hostDataListStore.append(row)
-            # set model.
-            self.hostTreeView.set_model(model=self.hostDataListStore)
-
-            # add columns.    
-            for i in range(len(self.columns)):
-                renderer = Gtk.CellRendererText()
-                column = Gtk.TreeViewColumn(self.columns[i] , renderer , text = i)
-                self.hostTreeView.append_column(column)
-            
-            """
-            # alternative way to append column
-            renderer = Gtk.CellRendererText()
-            for i in range(numberOfNewAttr):
-                self.hostTreeView.insert_column_with_attributes(-1, newAttr[i].get_text(),renderer)"""
+        # recreate table
+        self.recreateTable()
 
         # update config
         self.updateConfig()
@@ -141,13 +116,38 @@ class MainWindow(Gtk.Window):
 
     def on_delete_clicked(self, widget):
         if self.row:
+            deletedIndex = self.model.get_path(self.row)[0]
             self.hostDataListStore.remove(self.row)
-            
             # remove deleted from rows so config can get updated.
             # self.model.get_path(self.row) returns a Gtk.TreePath item even though when we print it it shows an integer
             # self.model.get_path(self.row)[0] gives the index as an integer.
-            deletedIndex = self.model.get_path(self.row)[0]
+            print(deletedIndex)
             self.rows.pop(deletedIndex)
+
+            # check whether a column is empty or not
+            # if it is, delete that column
+            print(self.rows)
+            deletedColumn = False
+            colIndex = 0
+            while colIndex < len(self.columns):
+                col = [row[colIndex] for row in self.rows]
+
+                # if all values are "-", delete that column.
+                if all(value == "-" for value in col):
+                    deletedColumn = True
+                    self.columns.pop(colIndex)
+                    
+                    for i in range(len(self.rows)):
+                        self.rows[i].pop(colIndex)
+                        print("here?")
+
+                    colIndex -= 1
+                colIndex += 1
+            
+            if deletedColumn:
+                self.recreateTable()
+
+
             self.updateConfig()
         else:
             print("there's no host to delete.")
@@ -194,6 +194,34 @@ class MainWindow(Gtk.Window):
                         fileObject.write(line)
                     
                 fileObject.write("\n")
+
+    
+    def recreateTable(self):
+            # delete all columns
+            for column in self.hostTreeView.get_columns():
+                self.hostTreeView.remove_column(column)
+
+            # create ListStore from scratch.
+            argType = [str] * len(self.columns)
+            self.hostDataListStore = Gtk.ListStore(*argType)
+
+            # add rows to the list store
+            for row in self.rows:
+                self.hostDataListStore.append(row)
+            # set model.
+            self.hostTreeView.set_model(model=self.hostDataListStore)
+
+            # add columns.    
+            for i in range(len(self.columns)):
+                renderer = Gtk.CellRendererText()
+                column = Gtk.TreeViewColumn(self.columns[i] , renderer , text = i)
+                self.hostTreeView.append_column(column)
+            
+            """
+            # alternative way to append column
+            renderer = Gtk.CellRendererText()
+            for i in range(numberOfNewAttr):
+                self.hostTreeView.insert_column_with_attributes(-1, newAttr[i].get_text(),renderer)"""
 
 
 class PopUpWindow(Gtk.Window):
