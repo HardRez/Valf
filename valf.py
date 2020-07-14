@@ -75,6 +75,12 @@ class MainWindow(Gtk.Window):
         self.addButton.connect("clicked", self.on_add_clicked)
         self.buttonBox.pack_start(self.addButton, True, True, 0)
 
+        # add "create button" , add it to the button box.
+        self.editButton = Gtk.Button.new_with_label("Edit Host")
+        self.editButton.connect("clicked", self.on_edit_clicked)
+        self.buttonBox.pack_start(self.editButton, True, True, 0)
+
+
         # add "delete button" , add it to the button box.
         self.deleteButton = Gtk.Button.new_with_label("Delete Host")
         self.deleteButton.connect("clicked", self.on_delete_clicked)
@@ -84,7 +90,7 @@ class MainWindow(Gtk.Window):
         self.emptyLabel = Gtk.Label(label = "")
         self.grid.attach(self.emptyLabel, 1 , 0 , 2, 1)
 
-    def popUpCallBack(self, newHost, newAttr):
+    def add_host(self, newHost, newAttr):
 
         # no new attributes.   
         if len(newHost) == len(self.columns):
@@ -111,7 +117,7 @@ class MainWindow(Gtk.Window):
 
 
     def on_add_clicked(self, widget):
-        win = PopUpWindow(self.popUpCallBack, self.columns)
+        win = DeleteHostWindow(self.add_host, self.columns)
         win.show()
 
     def on_delete_clicked(self, widget):
@@ -152,6 +158,24 @@ class MainWindow(Gtk.Window):
         else:
             print("there's no host to delete.")
 
+    def on_edit_clicked(self, widget):
+        index = self.model.get_path(self.row)[0]
+        win = EditHostWindow(self.edit_host, self.rows[index], self.columns)
+        win.show()
+
+    def edit_host(self, newAttrValues):
+        index = self.model.get_path(self.row)[0]
+        self.hostDataListStore[index] = newAttrValues
+
+        """ instead of line above, this also works
+        self.hostDataListStore[index] = newAttrValues
+        self.hostDataListStore.remove(self.row)
+        self.hostDataListStore.insert(index, newAttrValues) """
+
+        self.rows[index] = newAttrValues
+
+
+        self.updateConfig()
 
     def update_selected_host(self , selection):
         self.model , self.row = selection.get_selected()
@@ -224,7 +248,7 @@ class MainWindow(Gtk.Window):
                 self.hostTreeView.insert_column_with_attributes(-1, newAttr[i].get_text(),renderer)"""
 
 
-class PopUpWindow(Gtk.Window):
+class DeleteHostWindow(Gtk.Window):
     def __init__(self,callback,columns):
         self.newHost = None
         self.callback = callback
@@ -312,6 +336,66 @@ class PopUpWindow(Gtk.Window):
 
     def exit(self, widget):
         self.destroy()
+
+
+
+class EditHostWindow(Gtk.Window):
+    def __init__(self,callback, row, columns):
+        self.callback = callback
+        self.columns = columns
+        self.row = row
+        self.values = []
+
+        Gtk.Window.__init__(self, title="Edit Host")
+        self.set_border_width(10)
+        
+        
+        self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.add(self.box)
+        
+        self.listbox = Gtk.ListBox()
+        self.box.pack_start(self.listbox, True, True, 0)
+
+        for i,column in enumerate(self.columns):
+            row = Gtk.ListBoxRow()
+            mini_box = Gtk.Box(spacing = 30)
+
+            label = Gtk.Label(label = column)
+            entry = Gtk.Entry()
+            entry.set_text(self.row[i])
+
+            mini_box.pack_start(label, True, True, 0)
+            mini_box.pack_start(entry, True, True, 0)
+            row.add(mini_box)
+            self.listbox.add(row)
+
+            # we will need these entry's later when we need to add a new host.
+            self.values.append(entry)
+
+        self.buttonBox = Gtk.Box(spacing = 15)
+
+        self.saveButton = Gtk.Button.new_with_label("Save")
+        self.saveButton.connect("clicked", self.editAttributes)
+
+        self.cancelButton = Gtk.Button.new_with_label("Cancel")
+        self.cancelButton.connect("clicked", self.exit)
+
+        self.buttonBox.pack_start(self.saveButton, True, True, 0)
+        self.buttonBox.pack_start(self.cancelButton, True, True, 0)
+
+        self.box.pack_start(self.buttonBox, True, True, 0)
+        self.show_all()
+
+    def editAttributes(self, widget):
+        newAttrValues = []
+        for i in range(len(self.columns)):
+            newAttrValues.append(self.values[i].get_text())
+        self.callback(newAttrValues)
+        self.destroy()
+
+    def exit(self, widget):
+        self.destroy()
+
 
 
 print(os.getcwd())
