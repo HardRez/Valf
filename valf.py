@@ -4,6 +4,7 @@ import os
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
+# github check
 
 class MainWindow(Gtk.Window):
     def __init__(self , path):
