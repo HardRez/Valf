@@ -9,10 +9,14 @@ class MainWindow(Gtk.Window):
         Gtk.Window.__init__(self, title="Hosts")
         self.set_border_width(10)
 
-        # row and column data
-        self.rows = []
-        self.columns = []
-        
+        # all informations and host names
+        self.data = []
+        self.hostNames = [] 
+        self.editBox = None
+        # values from edit section
+        # items are Gtk.Entry
+        self.editAttributeValues = []
+        self.editAttributes = []
         # extract data from config
         self.fileToData(path)
 
@@ -33,29 +37,23 @@ class MainWindow(Gtk.Window):
 
         # create the ListStore
         # convert data to ListStore
-        argType = [str] * len(self.columns)
-        self.hostDataListStore = Gtk.ListStore(*argType)
+        self.hostDataListStore = Gtk.ListStore(str) # 1 column, host names.
 
 
-        for row in self.rows:
-            self.hostDataListStore.append(row)
+        for row in self.hostNames:
+            _list = [row]
+            self.hostDataListStore.append(_list)
 
         # TreeView the data that is displayed.
         self.hostTreeView = Gtk.TreeView(model = self.hostDataListStore)
 
         # Render data / build columns
-        for i , col_title in enumerate(self.columns):
-            # render / draw the data
-            renderer = Gtk.CellRendererText()
+        # only render "host" column
+        renderer = Gtk.CellRendererText()
+        column = Gtk.TreeViewColumn("Host" , renderer , text = 0)
+        column.set_sort_column_id(0)
+        self.hostTreeView.append_column(column)
 
-            # create columns
-            column = Gtk.TreeViewColumn(col_title , renderer , text = i)
-
-            # make columns sortable
-            column.set_sort_column_id(i)
-
-            # add column to treeview
-            self.hostTreeView.append_column(column)
 
         # Handle Selection
         self.selectedRow = self.hostTreeView.get_selection()
@@ -75,187 +73,158 @@ class MainWindow(Gtk.Window):
         self.addButton.connect("clicked", self.on_add_clicked)
         self.buttonBox.pack_start(self.addButton, True, True, 0)
 
-        # add "create button" , add it to the button box.
-        self.editButton = Gtk.Button.new_with_label("Edit Host")
-        self.editButton.connect("clicked", self.on_edit_clicked)
-        self.buttonBox.pack_start(self.editButton, True, True, 0)
-
-
         # add "delete button" , add it to the button box.
         self.deleteButton = Gtk.Button.new_with_label("Delete Host")
         self.deleteButton.connect("clicked", self.on_delete_clicked)
         self.buttonBox.pack_start(self.deleteButton, True, True, 0)
 
+         # add "save button" , add it to the button box.
+        self.saveButton = Gtk.Button.new_with_label("Save")
+        self.saveButton.connect("clicked", self.on_save_clicked)
+        self.buttonBox.pack_start(self.saveButton, True, True, 0)
+
+        # show attributes of selected host in the right side (2/3 side)
         # create an empty label in order to cover 2/3 of the gui.
-        self.emptyLabel = Gtk.Label(label = "")
-        self.grid.attach(self.emptyLabel, 1 , 0 , 2, 1)
+        self.rightBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        self.grid.attach(self.rightBox, 1 , 0 , 2, 1)
+
+        # add "save button" , add it to the button box.
+        self.newAttrBtn = Gtk.Button.new_with_label("New Attribute")
+        self.newAttrBtn.connect("clicked", self.on_add_attribute)
+        # add this button to the box after listbox gets added to box. It happens inside the function update_selected_host
 
     def add_host(self, newHost, newAttr):
-
-        # no new attributes.   
-        if len(newHost) == len(self.columns):
-            self.hostDataListStore.append(newHost)
-
-        # need to rearrange data for every row.
-        else:
-            numberOfNewAttr = len(newHost) - len(self.columns)
-
-            for i in range(len(self.rows)):
-                self.rows[i].extend(["-"] * numberOfNewAttr)
-
-
-            for new_attr in newAttr:
-                self.columns.append(new_attr.get_text())
-            
-        self.rows.append(newHost)
-
-        # recreate table
-        self.recreateTable()
-
-        # update config
-        self.updateConfig()
+        _list = [newHost['Host']]
+        self.data.append(newHost)
+        self.hostDataListStore.append(_list)
 
 
     def on_add_clicked(self, widget):
-        win = DeleteHostWindow(self.add_host, self.columns)
+        win = AddHostWindow(self.add_host)
         win.show()
+
+    def on_add_attribute(self, widget):
+        row = Gtk.ListBoxRow()
+        box = Gtk.Box(spacing = 15)
+
+        newAttr = Gtk.Entry()
+        newAttr.set_text("Key")
+
+        newAttrValue = Gtk.Entry()
+        newAttrValue.set_text("Value")
+
+        box.pack_start(newAttr, True, True, 0)
+        box.pack_start(newAttrValue, True, True, 0)
+
+        row.add(box)
+        self.editBox.add(row)
+        self.editBox.show_all()
+
+        self.editAttributes.append(newAttr)
+        self.editAttributeValues.append(newAttrValue)
+
 
     def on_delete_clicked(self, widget):
         if self.row:
             deletedIndex = self.model.get_path(self.row)[0]
             self.hostDataListStore.remove(self.row)
-            # remove deleted from rows so config can get updated.
-            # self.model.get_path(self.row) returns a Gtk.TreePath item even though when we print it it shows an integer
-            # self.model.get_path(self.row)[0] gives the index as an integer.
             print(deletedIndex)
-            self.rows.pop(deletedIndex)
+            self.data.pop(deletedIndex)
 
-            # check whether a column is empty or not
-            # if it is, delete that column
-            print(self.rows)
-            deletedColumn = False
-            colIndex = 0
-            while colIndex < len(self.columns):
-                col = [row[colIndex] for row in self.rows]
-
-                # if all values are "-", delete that column.
-                if all(value == "-" for value in col):
-                    deletedColumn = True
-                    self.columns.pop(colIndex)
-                    
-                    for i in range(len(self.rows)):
-                        self.rows[i].pop(colIndex)
-                        print("here?")
-
-                    colIndex -= 1
-                colIndex += 1
-            
-            if deletedColumn:
-                self.recreateTable()
-
-
-            self.updateConfig()
         else:
             print("there's no host to delete.")
 
-    def on_edit_clicked(self, widget):
+    def on_save_clicked(self, widget):
+        # some editing might have happened to a host
+        updatedHostData = {}
+        for i,attr in enumerate(self.editAttributes):
+            if type(attr) == str:
+                updatedHostData[attr] = self.editAttributeValues[i].get_text()
+            else:
+                updatedHostData[attr.get_text()] = self.editAttributeValues[i].get_text()
+
+
         index = self.model.get_path(self.row)[0]
-        win = EditHostWindow(self.edit_host, self.rows[index], self.columns)
-        win.show()
-
-    def edit_host(self, newAttrValues):
-        index = self.model.get_path(self.row)[0]
-        self.hostDataListStore[index] = newAttrValues
-
-        """ instead of line above, this also works
-        self.hostDataListStore[index] = newAttrValues
-        self.hostDataListStore.remove(self.row)
-        self.hostDataListStore.insert(index, newAttrValues) """
-
-        self.rows[index] = newAttrValues
-
+        self.data[index] = updatedHostData
 
         self.updateConfig()
 
+    def updateConfig(self):
+        with open("config", "w") as fileObject:
+            for _data in self.data:
+                for key in _data.keys():
+                    if _data[key].strip() != "":
+                        line = key + " " + _data[key] +"\n"
+                        fileObject.write(line)
+                    
+                fileObject.write("\n")
+
+
     def update_selected_host(self , selection):
+
+        if not self.editBox:
+            self.editBox = Gtk.ListBox()
+            self.rightBox.pack_start(self.editBox, True, True, 0)
+            self.rightBox.pack_start(self.newAttrBtn, True, True, 0)
+
         self.model , self.row = selection.get_selected()
 
+        if self.editBox:
+            childrens = self.editBox.get_children()
+            for child in childrens:
+                self.editBox.remove(child)
+
+        # display right box
+        self.displayRightList()
 
     def fileToData(self,path):
-        data = []
         os.chdir(path)
         with open("config", "r") as fileObject:
 
             for line in fileObject:
                 processedLine = line.strip().split(" ")
                 if processedLine[0] == "Host":
-                    data.append({processedLine[0] : processedLine[1]})
+                    self.hostNames.append(processedLine[1])
+                    self.data.append({processedLine[0] : processedLine[1]})
 
                 elif processedLine[0] != "":
-                    data[len(data) - 1][processedLine[0]] = processedLine[1]
+                    self.data[len(self.data) - 1][processedLine[0]] = processedLine[1]
 
-                # add attribute to columns list
-                if processedLine[0] not in self.columns and processedLine[0] != "":
-                    self.columns.append(processedLine[0])
         
-        for sample in data:
-            newRow = ["-"] * len(self.columns)
-            for key in sample.keys():
-                index = self.columns.index(key)
-                newRow[index] = sample[key]
-            
-            self.rows.append(newRow)
-            
+    def displayRightList(self):
+        # reset attribute values.
+        self.editAttributeValues = []
+        self.editAttributes = []
+        # we already know the data and selected index
+        hostData = self.data[self.model.get_path(self.row)[0]]
+
+        for key in hostData.keys():
+            row = Gtk.ListBoxRow()
+            mini_box = Gtk.Box(spacing = 30)
+
+            label = Gtk.Label(label = key)
+            entry = Gtk.Entry()
+            entry.set_text(hostData[key])
+
+            mini_box.pack_start(label, True, True, 0)
+            mini_box.pack_start(entry, True, True, 0)
+            row.add(mini_box)
+            self.editBox.add(row)
+
+            self.editAttributeValues.append(entry)
+            self.editAttributes.append(key)
+
         
 
-
-    def updateConfig(self):
-        with open("config", "w") as fileObject:
-            for row in self.rows:
-                for i,column in enumerate(self.columns):
-                    if row[i] != "-":
-                        line = column + " " + row[i] +"\n"
-                        fileObject.write(line)
-                    
-                fileObject.write("\n")
-
-    
-    def recreateTable(self):
-            # delete all columns
-            for column in self.hostTreeView.get_columns():
-                self.hostTreeView.remove_column(column)
-
-            # create ListStore from scratch.
-            argType = [str] * len(self.columns)
-            self.hostDataListStore = Gtk.ListStore(*argType)
-
-            # add rows to the list store
-            for row in self.rows:
-                self.hostDataListStore.append(row)
-            # set model.
-            self.hostTreeView.set_model(model=self.hostDataListStore)
-
-            # add columns.    
-            for i in range(len(self.columns)):
-                renderer = Gtk.CellRendererText()
-                column = Gtk.TreeViewColumn(self.columns[i] , renderer , text = i)
-                self.hostTreeView.append_column(column)
-            
-            """
-            # alternative way to append column
-            renderer = Gtk.CellRendererText()
-            for i in range(numberOfNewAttr):
-                self.hostTreeView.insert_column_with_attributes(-1, newAttr[i].get_text(),renderer)"""
-
-
-class DeleteHostWindow(Gtk.Window):
-    def __init__(self,callback,columns):
+        self.show_all()
+class AddHostWindow(Gtk.Window):
+    def __init__(self,callback):
         self.newHost = None
         self.callback = callback
-        self.columns = columns
-
-        self.newAttributes = [] # items are Gtk.Entry()
-        self.newAttributesValues = [] # items are Gtk.Entry()
+        self.data = {}
+        self.mandatoryEntries = ['Host', 'Hostname']
+        self.optionalAttributes = [] # items are Gtk.Entry()
+        self.attributeValues = [] # items are Gtk.Entry() , mandatory + optional
 
         Gtk.Window.__init__(self, title="Add Host")
         self.set_border_width(10)
@@ -267,7 +236,7 @@ class DeleteHostWindow(Gtk.Window):
         self.listbox = Gtk.ListBox()
         self.box.pack_start(self.listbox, True, True, 0)
 
-        for column in self.columns:
+        for column in self.mandatoryEntries:
             row = Gtk.ListBoxRow()
             mini_box = Gtk.Box(spacing = 30)
 
@@ -279,7 +248,7 @@ class DeleteHostWindow(Gtk.Window):
             self.listbox.add(row)
 
             # we will need these entry's later when we need to add a new host.
-            self.newAttributesValues.append(entry)
+            self.attributeValues.append(entry)
 
         self.buttonBox = Gtk.Box(spacing = 15)
 
@@ -316,85 +285,34 @@ class DeleteHostWindow(Gtk.Window):
         self.listbox.add(row)
         self.listbox.show_all()
 
-        self.newAttributes.append(newAttr)
-        self.newAttributesValues.append(newAttrValue)
+        self.optionalAttributes.append(newAttr)
+        self.attributeValues.append(newAttrValue)
 
     def addHost(self, widget):
-        self.newHost = []
+        cond = True
+        self.newHost = {}
 
-        for i in range(len(self.columns)):
-            if self.newAttributesValues[i].get_text().strip() != "":
-                self.newHost.append(self.newAttributesValues[i].get_text())
-            else:
-                self.newHost.append("-")
+        for i in range(len(self.mandatoryEntries)):
+            if self.attributeValues[i].get_text().strip() == "":
+                cond = False
+                print("host and hostnames are mandatory, fill them.")
 
-        for i in range(len(self.newAttributes)):
-            self.newHost.append(self.newAttributesValues[i + len(self.columns)].get_text())
+        if cond:
+            for i in range(len(self.mandatoryEntries)):
+                self.newHost[self.mandatoryEntries[i]] = self.attributeValues[i].get_text()
 
-        self.callback(self.newHost, self.newAttributes)
-        self.destroy()
+            for i in range(len(self.optionalAttributes)):
+                self.newHost[self.optionalAttributes[i].get_text()] = self.attributeValues[i + len(self.mandatoryEntries)].get_text()
 
-    def exit(self, widget):
-        self.destroy()
-
-
-
-class EditHostWindow(Gtk.Window):
-    def __init__(self,callback, row, columns):
-        self.callback = callback
-        self.columns = columns
-        self.row = row
-        self.values = []
-
-        Gtk.Window.__init__(self, title="Edit Host")
-        self.set_border_width(10)
-        
-        
-        self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.add(self.box)
-        
-        self.listbox = Gtk.ListBox()
-        self.box.pack_start(self.listbox, True, True, 0)
-
-        for i,column in enumerate(self.columns):
-            row = Gtk.ListBoxRow()
-            mini_box = Gtk.Box(spacing = 30)
-
-            label = Gtk.Label(label = column)
-            entry = Gtk.Entry()
-            entry.set_text(self.row[i])
-
-            mini_box.pack_start(label, True, True, 0)
-            mini_box.pack_start(entry, True, True, 0)
-            row.add(mini_box)
-            self.listbox.add(row)
-
-            # we will need these entry's later when we need to add a new host.
-            self.values.append(entry)
-
-        self.buttonBox = Gtk.Box(spacing = 15)
-
-        self.saveButton = Gtk.Button.new_with_label("Save")
-        self.saveButton.connect("clicked", self.editAttributes)
-
-        self.cancelButton = Gtk.Button.new_with_label("Cancel")
-        self.cancelButton.connect("clicked", self.exit)
-
-        self.buttonBox.pack_start(self.saveButton, True, True, 0)
-        self.buttonBox.pack_start(self.cancelButton, True, True, 0)
-
-        self.box.pack_start(self.buttonBox, True, True, 0)
-        self.show_all()
-
-    def editAttributes(self, widget):
-        newAttrValues = []
-        for i in range(len(self.columns)):
-            newAttrValues.append(self.values[i].get_text())
-        self.callback(newAttrValues)
-        self.destroy()
+            self.callback(self.newHost, self.optionalAttributes)
+            self.destroy()
 
     def exit(self, widget):
         self.destroy()
+
+
+
+
 
 
 
