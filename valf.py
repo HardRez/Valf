@@ -12,11 +12,13 @@ class MainWindow(Gtk.Window):
         # all informations and host names
         self.data = []
         self.hostNames = [] 
-        self.editBox = None
+        self.editListbox = None
         # values from edit section
         # items are Gtk.Entry
         self.editAttributeValues = []
         self.editAttributes = []
+
+        self.mandatoryAttributes = ['Host', 'Hostname']
         # extract data from config
         self.fileToData(path)
 
@@ -51,7 +53,7 @@ class MainWindow(Gtk.Window):
         # only render "host" column
         renderer = Gtk.CellRendererText()
         column = Gtk.TreeViewColumn("Host" , renderer , text = 0)
-        column.set_sort_column_id(0)
+        # column.set_sort_column_id(0) sorting mess things up.
         self.hostTreeView.append_column(column)
 
 
@@ -88,10 +90,17 @@ class MainWindow(Gtk.Window):
         self.rightBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         self.grid.attach(self.rightBox, 1 , 0 , 2, 1)
 
+
         # add "save button" , add it to the button box.
-        self.newAttrBtn = Gtk.Button.new_with_label("New Attribute")
-        self.newAttrBtn.connect("clicked", self.on_add_attribute)
-        # add this button to the box after listbox gets added to box. It happens inside the function update_selected_host
+        self.editBtnBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        self.addAttrBtn = Gtk.Button.new_with_label("Add Attribute")
+        self.addAttrBtn.connect("clicked", self.on_add_attribute)
+        self.editBtnBox.pack_start(self.addAttrBtn, True, True, 0)
+
+        self.deleteAttrBtn = Gtk.Button.new_with_label("Delete Attribute")
+        self.deleteAttrBtn.connect("clicked", self.on_delete_attribute)
+        self.editBtnBox.pack_start(self.deleteAttrBtn, True, True, 0)
+        # add this button to the editbox after listbox gets added to box. It happens inside the function update_selected_host
 
     def add_host(self, newHost, newAttr):
         _list = [newHost['Host']]
@@ -117,12 +126,36 @@ class MainWindow(Gtk.Window):
         box.pack_start(newAttrValue, True, True, 0)
 
         row.add(box)
-        self.editBox.add(row)
-        self.editBox.show_all()
+        self.editListbox.add(row)
+        self.editListbox.show_all()
 
         self.editAttributes.append(newAttr)
         self.editAttributeValues.append(newAttrValue)
 
+    def on_delete_attribute(self, widget):
+        print(len(self.editAttributes))
+        if self.editListbox.get_selected_row():
+            index = self.editListbox.get_selected_row().get_index()
+            attr = self.editAttributes[index]
+            if type(attr) == str:
+                if self.editAttributes[index] in self.mandatoryAttributes:
+                    print("you can not delete this attribute. its a mandatory attribute")
+                    
+                else:
+                    self.editAttributes.pop(index)
+                    self.editAttributeValues.pop(index)
+                    self.editListbox.remove(self.editListbox.get_selected_row())
+            else:
+                if self.editAttributes[index].get_text() in self.mandatoryAttributes:
+                    print("you can not delete this attribute. its a mandatory attribute")
+                    
+                else:
+                    self.editAttributes.pop(index)
+                    self.editAttributeValues.pop(index)
+                    self.editListbox.remove(self.editListbox.get_selected_row()) # doesnt delete with index, deletes with widget.
+ 
+        else:
+            print("you need to select an attribute first.")
 
     def on_delete_clicked(self, widget):
         if self.row:
@@ -146,6 +179,8 @@ class MainWindow(Gtk.Window):
 
         index = self.model.get_path(self.row)[0]
         self.data[index] = updatedHostData
+        self.hostDataListStore[index] = [updatedHostData['Host']]
+
 
         self.updateConfig()
 
@@ -162,17 +197,17 @@ class MainWindow(Gtk.Window):
 
     def update_selected_host(self , selection):
 
-        if not self.editBox:
-            self.editBox = Gtk.ListBox()
-            self.rightBox.pack_start(self.editBox, True, True, 0)
-            self.rightBox.pack_start(self.newAttrBtn, True, True, 0)
+        if not self.editListbox:
+            self.editListbox = Gtk.ListBox()
+            self.rightBox.pack_start(self.editListbox, True, True, 0)
+            self.rightBox.pack_start(self.editBtnBox, True, True, 0)
 
         self.model , self.row = selection.get_selected()
 
-        if self.editBox:
-            childrens = self.editBox.get_children()
+        if self.editListbox:
+            childrens = self.editListbox.get_children()
             for child in childrens:
-                self.editBox.remove(child)
+                self.editListbox.remove(child)
 
         # display right box
         self.displayRightList()
@@ -209,7 +244,7 @@ class MainWindow(Gtk.Window):
             mini_box.pack_start(label, True, True, 0)
             mini_box.pack_start(entry, True, True, 0)
             row.add(mini_box)
-            self.editBox.add(row)
+            self.editListbox.add(row)
 
             self.editAttributeValues.append(entry)
             self.editAttributes.append(key)
