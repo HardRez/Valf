@@ -5,7 +5,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
 class MainWindow(Gtk.Window):
-    def __init__(self , path):
+    def __init__(self):
         Gtk.Window.__init__(self, title="Hosts")
         self.set_border_width(10)
 
@@ -20,7 +20,7 @@ class MainWindow(Gtk.Window):
 
         self.mandatoryAttributes = ['Host', 'Hostname']
         # extract data from config
-        self.fileToData(path)
+        self.fileToData()
 
         #  last model & row
         self.model = None
@@ -212,7 +212,12 @@ class MainWindow(Gtk.Window):
         # display right box
         self.displayRightList()
 
-    def fileToData(self,path):
+    def fileToData(self):
+        curPath = os.getcwd()
+        names = curPath.split("/")
+        pcName = names[2] 
+
+        path = f"/home/{pcName}/.ssh"
         os.chdir(path)
         with open("config", "r") as fileObject:
 
@@ -251,7 +256,7 @@ class MainWindow(Gtk.Window):
                 self.editAttributes.append(key)        
 
                 self.show_all()
-                
+
 class AddHostWindow(Gtk.Window):
     def __init__(self,callback):
         self.newHost = None
@@ -351,10 +356,9 @@ class AddHostWindow(Gtk.Window):
 
 
 
-print(os.getcwd())
-path = "/home/nogigen/.ssh"
 
-win = MainWindow(path)
+
+win = MainWindow()
 win.connect("destroy", Gtk.main_quit)
 win.show_all()
 Gtk.main()
