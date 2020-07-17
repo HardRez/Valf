@@ -217,7 +217,7 @@ class MainWindow(Gtk.Window):
         names = curPath.split("/")
         pcName = names[2] 
 
-        path = f"/home/{pcName}/.ssh"
+        path = f"/{names[1]}/{names[2]}/.ssh"
         os.chdir(path)
         with open("config", "r") as fileObject:
 
