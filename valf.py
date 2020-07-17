@@ -1,5 +1,6 @@
 import gi
 import os
+import errno
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
@@ -19,6 +20,9 @@ class MainWindow(Gtk.Window):
         self.editAttributes = []
 
         self.mandatoryAttributes = ['Host', 'Hostname']
+
+        self.control()
+
         # extract data from config
         self.fileToData()
 
@@ -212,6 +216,37 @@ class MainWindow(Gtk.Window):
         # display right box
         self.displayRightList()
 
+    # check whether there is .ssh folder or not
+    # check whether there is config and known_hosts file inside .ssh folder or not
+    # if there is no .ssh folder, create one.
+    # if there is no config/known_hosts file, create an empty one
+    def control(self):
+        curPath = os.getcwd()
+        names = curPath.split("/")
+        path = f"/{names[1]}/{names[2]}"
+        os.chdir(path)
+
+        """ alternative way.
+        directories = os.listdir()
+        # if there is no .ssh, create it!
+        if ".ssh" not in directories:
+            os.mkdir(".ssh") """ 
+        
+        try:
+            # Create target Directory
+            os.mkdir(".ssh")
+            print(".ssh is created") 
+        except FileExistsError:
+            print(".ssh already exists.") 
+
+        for fileName in ["config", "known_hosts"]:
+            try:
+                open(path +"/.ssh/" + fileName, "x")
+                print(fileName + " is created.")
+            except FileExistsError:
+                print(fileName + " already exists.")
+
+
     def fileToData(self):
         curPath = os.getcwd()
         names = curPath.split("/")
@@ -349,13 +384,6 @@ class AddHostWindow(Gtk.Window):
 
     def exit(self, widget):
         self.destroy()
-
-
-
-
-
-
-
 
 
 win = MainWindow()
