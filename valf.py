@@ -231,27 +231,27 @@ class MainWindow(Gtk.Window):
         self.editAttributeValues = []
         self.editAttributes = []
         # we already know the data and selected index
-        hostData = self.data[self.model.get_path(self.row)[0]]
+        if self.row:
+            hostData = self.data[self.model.get_path(self.row)[0]]
 
-        for key in hostData.keys():
-            row = Gtk.ListBoxRow()
-            mini_box = Gtk.Box(spacing = 30)
+            for key in hostData.keys():
+                row = Gtk.ListBoxRow()
+                mini_box = Gtk.Box(spacing = 30)
 
-            label = Gtk.Label(label = key)
-            entry = Gtk.Entry()
-            entry.set_text(hostData[key])
+                label = Gtk.Label(label = key)
+                entry = Gtk.Entry()
+                entry.set_text(hostData[key])
 
-            mini_box.pack_start(label, True, True, 0)
-            mini_box.pack_start(entry, True, True, 0)
-            row.add(mini_box)
-            self.editListbox.add(row)
+                mini_box.pack_start(label, True, True, 0)
+                mini_box.pack_start(entry, True, True, 0)
+                row.add(mini_box)
+                self.editListbox.add(row)
 
-            self.editAttributeValues.append(entry)
-            self.editAttributes.append(key)
+                self.editAttributeValues.append(entry)
+                self.editAttributes.append(key)        
 
-        
-
-        self.show_all()
+                self.show_all()
+                
 class AddHostWindow(Gtk.Window):
     def __init__(self,callback):
         self.newHost = None
