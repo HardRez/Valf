@@ -3,7 +3,12 @@ import os
 import errno
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk
+gi.require_version("Vte" , "2.91")
+from gi.repository import Gtk, Vte
+from gi.repository import GLib
+
+HOME = "HOME"
+SHELLS = [ "/bin/bash" ]
 
 class MainWindow(Gtk.Window):
     def __init__(self):
@@ -59,7 +64,7 @@ class MainWindow(Gtk.Window):
         column = Gtk.TreeViewColumn("Host" , renderer , text = 0)
         # column.set_sort_column_id(0) sorting mess things up.
         self.hostTreeView.append_column(column)
-
+        self.hostTreeView.connect("row-activated", self.row_double_click)
 
         # Handle Selection
         self.selectedRow = self.hostTreeView.get_selection()
@@ -105,6 +110,12 @@ class MainWindow(Gtk.Window):
         self.deleteAttrBtn.connect("clicked", self.on_delete_attribute)
         self.editBtnBox.pack_start(self.deleteAttrBtn, True, True, 0)
         # add this button to the editbox after listbox gets added to box. It happens inside the function update_selected_host
+
+    def row_double_click(self, widget, row, col):
+        index = row[0]
+        win = ConnectionWindow(self.data[index])
+        win.show()
+
 
     def add_host(self, newHost, newAttr):
         _list = [newHost['Host']]
@@ -384,6 +395,68 @@ class AddHostWindow(Gtk.Window):
 
     def exit(self, widget):
         self.destroy()
+
+
+class ConnectionWindow(Gtk.Window):
+    def __init__(self, data):
+        Gtk.Window.__init__(self, title="Bağlan")
+        self.set_border_width(10)
+        self.data = data
+        self.terminal = Vte.Terminal()
+        self.terminal.spawn_sync(
+                Vte.PtyFlags.DEFAULT,
+                os.environ[HOME],
+                SHELLS,
+                [],
+                GLib.SpawnFlags.DO_NOT_REAP_CHILD,
+                None,
+                None,
+                )
+        
+        self.command = None
+        self.isTerminalOpen = False
+
+
+        self.buttons = list()
+        for btn_name in ["dummy1", "dummy2", "dummy3", "Bağlan"]:
+            button = Gtk.Button(label = btn_name)
+            self.buttons.append(button)
+
+            if btn_name == "Bağlan":
+                button.connect("clicked", self.on_clicked_connect)
+                
+
+        self.grid = Gtk.Grid()
+        self.grid.set_column_homogeneous(True)
+        self.grid.set_row_homogeneous(True)
+        self.add(self.grid)
+
+        self.grid.add(self.buttons[0])
+        for i, button in enumerate(self.buttons[1 : ]):
+            self.grid.attach(button, 0 , i + 1, 1 , 1)
+            #self.grid.attach_next_to(button, self.buttons[i], Gtk.PositionType.BOTTOM, 3, 10)
+
+        self.rightBox = Gtk.Box()
+
+        #self.grid.attach(self.label, 1 , 0 , 2, 1)
+        self.grid.attach(self.rightBox, 1 , 0 , 2, len(self.buttons))
+        self.show_all()
+
+
+    
+    def on_clicked_connect(self, widget):
+        if not self.isTerminalOpen:
+            self.rightBox.add(self.terminal)
+            self.show_all()
+
+            self.command = f"ssh {self.data['Host']}\n"
+            self.terminal.feed_child_binary(self.command.encode("utf-8"))
+
+            self.isTerminalOpen = True
+
+
+
+
 
 
 win = MainWindow()
