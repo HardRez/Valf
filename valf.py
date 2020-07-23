@@ -196,6 +196,9 @@ class MainWindow(Gtk.Window):
         self.data[index] = updatedHostData
         self.hostDataListStore[index] = [updatedHostData['Host']]
 
+        # recreate edit list box, in order to change entries to label.
+        self.clearEditListBox()
+        self.displayRightList()
 
         self.updateConfig()
 
@@ -219,13 +222,20 @@ class MainWindow(Gtk.Window):
 
         self.model , self.row = selection.get_selected()
 
+        # delete displayed info in the right part (2/3 part)
+        # host ...
+        # hostname ... etc. delete those.
+        self.clearEditListBox()
+
+        # display right box
+        self.displayRightList()
+
+
+    def clearEditListBox(self):
         if self.editListbox:
             childrens = self.editListbox.get_children()
             for child in childrens:
                 self.editListbox.remove(child)
-
-        # display right box
-        self.displayRightList()
 
     # check whether there is .ssh folder or not
     # check whether there is config and known_hosts file inside .ssh folder or not
@@ -285,13 +295,22 @@ class MainWindow(Gtk.Window):
         if self.row:
             hostData = self.data[self.model.get_path(self.row)[0]]
 
+            maxKeyLength = 0
+            for key in hostData.keys():
+                if len(key) > maxKeyLength:
+                    maxKeyLength = len(key)
+
+            print(maxKeyLength)
+
             for key in hostData.keys():
                 row = Gtk.ListBoxRow()
                 mini_box = Gtk.Box(spacing = 30)
+                label = Gtk.Label(label = key + " " * (2 * (maxKeyLength - len(key))))
+                label.set_xalign(0.0)
 
-                label = Gtk.Label(label = key)
                 entry = Gtk.Entry()
                 entry.set_text(hostData[key])
+                entry.set_alignment(xalign = 0)
 
                 mini_box.pack_start(label, True, True, 0)
                 mini_box.pack_start(entry, True, True, 0)
@@ -446,13 +465,14 @@ class ConnectionWindow(Gtk.Window):
     
     def on_clicked_connect(self, widget):
         if not self.isTerminalOpen:
+
             self.rightBox.add(self.terminal)
             self.show_all()
-
-            self.command = f"ssh {self.data['Host']}\n"
-            self.terminal.feed_child_binary(self.command.encode("utf-8"))
-
             self.isTerminalOpen = True
+
+        self.command = f"ssh {self.data['Host']}\n"
+        self.terminal.feed_child_binary(self.command.encode("utf-8"))
+        #print(self.terminal.get_text())
 
 
 
