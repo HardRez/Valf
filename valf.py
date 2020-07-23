@@ -4,7 +4,7 @@ import errno
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Vte" , "2.91")
-from gi.repository import Gtk, Vte
+from gi.repository import Gtk, Vte, Gdk
 from gi.repository import GLib
 
 HOME = "HOME"
@@ -65,6 +65,8 @@ class MainWindow(Gtk.Window):
         # column.set_sort_column_id(0) sorting mess things up.
         self.hostTreeView.append_column(column)
         self.hostTreeView.connect("row-activated", self.row_double_click)
+        self.hostTreeView.connect("button-press-event", self.on_right_click)
+
 
         # Handle Selection
         self.selectedRow = self.hostTreeView.get_selection()
@@ -202,6 +204,20 @@ class MainWindow(Gtk.Window):
 
         self.updateConfig()
 
+    def on_right_click(self, widget, event):
+        # Check if right mouse button was preseed
+        if event.type == Gdk.EventType.BUTTON_PRESS and event.button == 3:
+            rect = Gdk.Rectangle()
+            rect.x = event.x
+            rect.y = event.y
+            rect.width = rect.height = 1
+            popover = Gtk.Popover()
+            popover.set_pointing_to(rect)
+            popover.show()
+
+            print("yes right click")
+            return True  # event has been handled
+
     def updateConfig(self):
         with open("config", "w") as fileObject:
             for _data in self.data:
@@ -269,11 +285,16 @@ class MainWindow(Gtk.Window):
 
 
     def fileToData(self):
-        curPath = os.getcwd()
-        names = curPath.split("/")
-        pcName = names[2] 
+        curPath = os.path.expanduser("~")
+        print(curPath)
+        """
+        curPath = os.getenv("HOME")
+        print(curPath)
 
-        path = f"/{names[1]}/{names[2]}/.ssh"
+        names = curPath.split("/")
+        pcName = names[2] """
+
+        path = f"{curPath}/.ssh"
         os.chdir(path)
         with open("config", "r") as fileObject:
 
