@@ -207,13 +207,15 @@ class MainWindow(Gtk.Window):
     def on_right_click(self, widget, event):
         # Check if right mouse button was preseed
         if event.type == Gdk.EventType.BUTTON_PRESS and event.button == 3:
-            rect = Gdk.Rectangle()
-            rect.x = event.x
-            rect.y = event.y
-            rect.width = rect.height = 1
-            popover = Gtk.Popover()
-            popover.set_pointing_to(rect)
-            popover.show()
+            newmenu=Gtk.Menu()
+            newitem=Gtk.MenuItem('hello')
+            newmenu.append(newitem)
+            newitem1=Gtk.MenuItem('goodbye')
+            newmenu.append(newitem1)
+            newmenu.show_all()
+            newmenu.attach_to_widget (self.hostTreeView, None)
+            
+            newmenu.popup(None, None, None, None, event.button, event.time)
 
             print("yes right click")
             return True  # event has been handled
@@ -258,9 +260,7 @@ class MainWindow(Gtk.Window):
     # if there is no .ssh folder, create one.
     # if there is no config/known_hosts file, create an empty one
     def control(self):
-        curPath = os.getcwd()
-        names = curPath.split("/")
-        path = f"/{names[1]}/{names[2]}"
+        path = os.path.expanduser("~")
         os.chdir(path)
 
         """ alternative way.
