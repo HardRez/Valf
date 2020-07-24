@@ -1,17 +1,15 @@
 import gi
+import paramiko
+import scpclient
+import os.path
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
-
-import paramiko
 from paramiko import SSHClient
-
-import scpclient
 from scp import SCPClient
 
-
 class FileChooserWindow(Gtk.Window):
-    
+
     def __init__(self):
         Gtk.Window.__init__(self, title="FileChooser Example")
 
@@ -21,10 +19,6 @@ class FileChooserWindow(Gtk.Window):
         button1 = Gtk.Button(label="Choose File")
         button1.connect("clicked", self.on_file_clicked)
         box.add(button1)
-
-        button2 = Gtk.Button(label="Choose Folder")
-        button2.connect("clicked", self.on_folder_clicked)
-        box.add(button2)
 
     def on_file_clicked(self, widget):
         dialog = Gtk.FileChooserDialog(
@@ -42,10 +36,10 @@ class FileChooserWindow(Gtk.Window):
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
             print("Open clicked")
-            #print("File selected: " + dialog.get_filename())
+            print("File selected: " + dialog.get_filename())
             fileName = dialog.get_filename()
             sendFileFunction(fileName)
-            #print(test)
+
         elif response == Gtk.ResponseType.CANCEL:
             print("Cancel clicked")
 
@@ -67,26 +61,8 @@ class FileChooserWindow(Gtk.Window):
         filter_any.add_pattern("*")
         dialog.add_filter(filter_any)
 
-    def on_folder_clicked(self, widget):
-        dialog = Gtk.FileChooserDialog(
-            title="Please choose a folder",
-            parent=self,
-            globalAction=Gtk.FileChooserAction.SELECT_FOLDER,
-        )
-        dialog.add_buttons(
-            Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, "Select", Gtk.ResponseType.OK
-        )
-        dialog.set_default_size(800, 400)
-
-        response = dialog.run()
-        if response == Gtk.ResponseType.OK:
-            print("Select clicked")
-            print("Folder selected: " + dialog.get_filename())
-        elif response == Gtk.ResponseType.CANCEL:
-            print("Cancel clicked")
-
-        dialog.destroy()
     
+
 def sendFileFunction(fname):
     print(fname)
     connection = SSHClient()
@@ -94,10 +70,13 @@ def sendFileFunction(fname):
     connection.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     connection.connect(hostname="192.168.1.8",username="hardrez", password="rez1999", port="22")
     ftp_client = connection.open_sftp()
-    ftp_client.put(fname, '/home/hardrez/firstTest.py')
+    ftp_client.put(fname, '/home/hardrez/' + pathManipulation(fname))
     ftp_client.close()
- 
 
+def pathManipulation(filePath):
+    manFileName = os.path.basename(filePath)
+    print(manFileName)
+    return manFileName
 
 win = FileChooserWindow()
 win.connect("destroy", Gtk.main_quit)
