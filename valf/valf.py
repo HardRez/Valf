@@ -66,7 +66,7 @@ class MainWindow(Gtk.Window):
         # Render data / build columns
         # only render "host" column
         renderer = Gtk.CellRendererText()
-        column = Gtk.TreeViewColumn("Host" , renderer , text = 0)
+        column = Gtk.TreeViewColumn("Hosts" , renderer , text = 0)
         # column.set_sort_column_id(0) sorting mess things up.
         self.hostTreeView.append_column(column)
         self.hostTreeView.connect("row-activated", self.row_double_click)
@@ -325,7 +325,7 @@ class MainWindow(Gtk.Window):
         # we already know the data and selected index
         if self.row:
             hostData = self.data[self.model.get_path(self.row)[0]]
-
+            #print(hostData['Host'])
             maxKeyLength = 0
             for key in hostData.keys():
                 if len(key) > maxKeyLength:
@@ -507,7 +507,8 @@ class ConnectionWindow(Gtk.Window):
         self.command = f"ssh {self.data['Host']}\n"
         self.terminal.feed_child_binary(self.command.encode("utf-8"))
         #print(self.terminal.get_text())
-################my
+################HardRez AREA
+#line 328
 class FileChooserWindow(Gtk.Window):
 
     def __init__(self):
