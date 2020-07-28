@@ -11,6 +11,7 @@ from gi.repository import Gtk, Vte, Gdk
 from gi.repository import GLib
 from paramiko import SSHClient
 from scp import SCPClient
+from pathlib import Path
 
 HOME = "HOME"
 SHELLS = [ "/bin/bash" ]
@@ -571,19 +572,35 @@ class FileChooserWindow(Gtk.Window):
         dialog.add_filter(filter_any)
 
     
-
-def sendFileFunction(fname):
-    print(fname)
-    connection = SSHClient()
+def create_connection():
+    #ssh connection
+    connection = paramiko.SSHClient()
     connection.load_system_host_keys()
     connection.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     connection.connect(hostname="192.168.1.8",username="hardrez", password="rez1999", port="22")
+    
+    return connection
+
+def sendFileFunction(fname):
+    #tested file name
+    print(fname)
+    connection = create_connection()
+    #for find home directory
+    command = "echo $HOME"
+    ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(command)
+    realOut = str(ssh_stdout.readlines())
+    realOut = realOut.replace("\\n", "")
+    realOut = realOut.strip("[]'")
+    print(realOut)
+
+    #scp
     ftp_client = connection.open_sftp()
-    ftp_client.put(fname, '/home/hardrez/' + pathManipulation(fname))
+    ftp_client.put(fname, realOut +"/" + pathManipulation(fname))
     ftp_client.close()
 
 def pathManipulation(filePath):
     manFileName = os.path.basename(filePath)
+    #tested manipulation
     print(manFileName)
     return manFileName
 ############
