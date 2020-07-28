@@ -527,13 +527,12 @@ class FileChooserWindow(Gtk.Window):
         self.box.pack_start(self.buttonBox, True, True, 0)
         self.show_all()
     
-    def testFunc(self, widget):
-        print("test")
-    
     def on_file_clicked(self, widget):
+        # File selection dialog
         dialog = Gtk.FileChooserDialog(
             title="Please choose a file", parent=self, action=Gtk.FileChooserAction.OPEN
         )
+        # Dialog buttons
         dialog.add_buttons(
             Gtk.STOCK_CANCEL,
             Gtk.ResponseType.CANCEL,
@@ -544,6 +543,7 @@ class FileChooserWindow(Gtk.Window):
         self.add_filters(dialog)
 
         response = dialog.run()
+        #catch button click
         if response == Gtk.ResponseType.OK:
             print("Open clicked")
             print("File selected: " + dialog.get_filename())
@@ -556,6 +556,7 @@ class FileChooserWindow(Gtk.Window):
         dialog.destroy()
 
     def add_filters(self, dialog):
+        #filters for files
         filter_text = Gtk.FileFilter()
         filter_text.set_name("Text files")
         filter_text.add_mime_type("text/plain")
@@ -585,9 +586,11 @@ def sendFileFunction(fname):
     #tested file name
     print(fname)
     connection = create_connection()
+
     #for find home directory
     command = "echo $HOME"
     ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(command)
+    #string manipulation for directory
     realOut = str(ssh_stdout.readlines())
     realOut = realOut.replace("\\n", "")
     realOut = realOut.strip("[]'")
