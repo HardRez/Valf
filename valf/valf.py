@@ -595,7 +595,7 @@ def sendFileFunction(fname):
 
     #scp
     ftp_client = connection.open_sftp()
-    ftp_client.put(fname, realOut +"/" + pathManipulation(fname))
+    ftp_client.put(fname, realOut + "/" + pathManipulation(fname))
     ftp_client.close()
 
 def pathManipulation(filePath):
