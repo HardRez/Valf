@@ -25,6 +25,7 @@ class MainWindow(Gtk.Window):
         self.data = []
         self.hostNames = [] 
         self.editListbox = None
+        
         # values from edit section
         # items are Gtk.Entry
         self.editAttributeValues = []
@@ -317,16 +318,21 @@ class MainWindow(Gtk.Window):
 
                 elif processedLine[0] != "":
                     self.data[len(self.data) - 1][processedLine[0]] = processedLine[1]
-
         
+    def testedSelectedFunc(self):
+        #print(hostDataSelected)                    
+        return hostDataSelected
+
     def displayRightList(self):
         # reset attribute values.
         self.editAttributeValues = []
         self.editAttributes = []
         # we already know the data and selected index
         if self.row:
+            global hostDataSelected
             hostData = self.data[self.model.get_path(self.row)[0]]
-            #print(hostData['Host'])
+            hostDataSelected = hostData
+            #print(hostData)
             maxKeyLength = 0
             for key in hostData.keys():
                 if len(key) > maxKeyLength:
@@ -353,9 +359,15 @@ class MainWindow(Gtk.Window):
                 self.editAttributes.append(key)        
 
                 self.show_all()
+    
+
+    
+
     def on_click_filechooser(self, widget, event):
         win = FileChooserWindow()
         win.show()
+    
+
 
 class AddHostWindow(Gtk.Window):
     def __init__(self,callback):
@@ -526,8 +538,14 @@ class FileChooserWindow(Gtk.Window):
         self.buttonBox.pack_start(self.addAttr, True, True, 0)
         self.box.pack_start(self.buttonBox, True, True, 0)
         self.show_all()
+
+
     
     def on_file_clicked(self, widget):
+        #NOW TESTING
+        #winEntry = EntryWindow()
+        #winEntry.activate_default(False)
+        #winEntry.show()
         # File selection dialog
         dialog = Gtk.FileChooserDialog(
             title="Please choose a file", parent=self, action=Gtk.FileChooserAction.OPEN
@@ -540,9 +558,11 @@ class FileChooserWindow(Gtk.Window):
             Gtk.ResponseType.OK,
         )
 
+        response = dialog.run()
+
         self.add_filters(dialog)
 
-        response = dialog.run()
+        
         #catch button click
         if response == Gtk.ResponseType.OK:
             print("Open clicked")
@@ -571,14 +591,20 @@ class FileChooserWindow(Gtk.Window):
         filter_any.set_name("Any files")
         filter_any.add_pattern("*")
         dialog.add_filter(filter_any)
+        
 
-    
+globalPort = "22" 
 def create_connection():
+    #selected item data
+    dataClass = MainWindow()
+    realHostData = dataClass.testedSelectedFunc()
+    print(realHostData['Host'])
+    print(globalPort)
     #ssh connection
     connection = paramiko.SSHClient()
     connection.load_system_host_keys()
     connection.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    connection.connect(hostname="192.168.1.8",username="hardrez", password="rez1999", port="22")
+    connection.connect(hostname=realHostData['Host'],username=realHostData['Hostname'], password="rez1999", port= globalPort)
     
     return connection
 
@@ -596,6 +622,8 @@ def sendFileFunction(fname):
     realOut = realOut.strip("[]'")
     print(realOut)
 
+  
+    #hostData = self.data[self.model.get_path(self.row)[0]]
     #scp
     ftp_client = connection.open_sftp()
     ftp_client.put(fname, realOut + "/" + pathManipulation(fname))
@@ -607,6 +635,39 @@ def pathManipulation(filePath):
     print(manFileName)
     return manFileName
 ############
+class EntryWindow(Gtk.Window):
+    def __init__(self):
+        Gtk.Window.__init__(self, title = "Password Login")
+        self.set_border_width(10)
+        self.box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.add(self.box)
+
+        self.labelBox = Gtk.Box(spacing = 15)
+
+        self.label = Gtk.Label()
+        self.label.set_text("Password: ")
+        self.labelBox.pack_start(self.label, True, True, 0)
+        self.box.pack_start(self.labelBox, True, True, 0)
+
+        self.entryBox = Gtk.Box(spacing = 15)
+
+        self.entry = Gtk.Entry()
+        self.entry.set_text("Password")
+        self.entryBox.pack_start(self.label, True, True, 0)
+        self.box.pack_start(self.entryBox, True, True, 0)
+
+        
+        self.buttonBox = Gtk.Box(spacing = 5)
+        self.addAttr = Gtk.Button.new_with_label("Login")
+        self.addAttr.connect("clicked", self.testFunc)
+        self.buttonBox.pack_start(self.addAttr, True, True, 0)
+        self.box.pack_start(self.buttonBox, True, True, 0)
+        self.show_all()
+
+
+    def testFunc(self, widget):
+        print("test")   
+        
 
 
 
