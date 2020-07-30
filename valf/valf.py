@@ -534,13 +534,16 @@ class FileChooserWindow(Gtk.Window):
         self.buttonBox = Gtk.Box(spacing = 15)
 
         self.addAttr = Gtk.Button.new_with_label("Choose file")
-        self.addAttr.connect("clicked", self.on_file_clicked)
+        self.addAttr.connect("clicked", self.show_PasswordWindow)
         self.buttonBox.pack_start(self.addAttr, True, True, 0)
         self.box.pack_start(self.buttonBox, True, True, 0)
         self.show_all()
 
 
-    
+    def show_PasswordWindow(self, widget):
+        win = EntryWindow()
+        win.show()
+
     def on_file_clicked(self, widget):
         #NOW TESTING
         #winEntry = EntryWindow()
@@ -637,36 +640,53 @@ def pathManipulation(filePath):
 ############
 class EntryWindow(Gtk.Window):
     def __init__(self):
-        Gtk.Window.__init__(self, title = "Password Login")
+        self.mandatoryEntries = ['Password']
+        self.optionalAttributes = [] # items are Gtk.Entry()
+        self.attributeValues = [] # items are Gtk.Entry() , mandatory + optional
+
+        Gtk.Window.__init__(self, title="Password Login")
         self.set_border_width(10)
-        self.box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.add(self.box)
-
-        self.labelBox = Gtk.Box(spacing = 15)
-
-        self.label = Gtk.Label()
-        self.label.set_text("Password: ")
-        self.labelBox.pack_start(self.label, True, True, 0)
-        self.box.pack_start(self.labelBox, True, True, 0)
-
-        self.entryBox = Gtk.Box(spacing = 15)
-
-        self.entry = Gtk.Entry()
-        self.entry.set_text("Password")
-        self.entryBox.pack_start(self.label, True, True, 0)
-        self.box.pack_start(self.entryBox, True, True, 0)
-
         
-        self.buttonBox = Gtk.Box(spacing = 5)
+        
+        self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.add(self.box)
+        
+        self.listbox = Gtk.ListBox()
+        self.box.pack_start(self.listbox, True, True, 0)
+
+        for column in self.mandatoryEntries:
+            row = Gtk.ListBoxRow()
+            mini_box = Gtk.Box(spacing = 30)
+
+            label = Gtk.Label(label = column)
+            entry = Gtk.Entry()
+            mini_box.pack_start(label, True, True, 0)
+            mini_box.pack_start(entry, True, True, 0)
+            row.add(mini_box)
+            self.listbox.add(row)
+
+            # we will need these entry's later when we need to add a new host.
+            self.attributeValues.append(entry)
+
+        self.buttonBox = Gtk.Box(spacing = 15)
+
         self.addAttr = Gtk.Button.new_with_label("Login")
         self.addAttr.connect("clicked", self.testFunc)
-        self.buttonBox.pack_start(self.addAttr, True, True, 0)
+     
+        self.exitButton = Gtk.Button.new_with_label("Exit")
+        self.exitButton.connect("clicked", self.testFunc)
+
+        self.buttonBox.pack_start(self.addAttr, True, True, 0)  
+        self.buttonBox.pack_start(self.exitButton, True, True, 0)
+
         self.box.pack_start(self.buttonBox, True, True, 0)
         self.show_all()
 
 
     def testFunc(self, widget):
-        print("test")   
+        print("test")
+        self.destroy()
+        FileChooserWindow.on_file_clicked(self, widget)
         
 
 
