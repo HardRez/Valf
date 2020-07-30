@@ -539,12 +539,10 @@ class FileChooserWindow(Gtk.Window):
         self.box.pack_start(self.buttonBox, True, True, 0)
         self.show_all()
 
-
     def show_PasswordWindow(self, widget):
         win = EntryWindow()
         win.show()
 
-    
 ############
 class EntryWindow(Gtk.Window):
     def __init__(self):
@@ -554,7 +552,6 @@ class EntryWindow(Gtk.Window):
 
         Gtk.Window.__init__(self, title="Password Login")
         self.set_border_width(10)
-        
         
         self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.add(self.box)
@@ -573,7 +570,6 @@ class EntryWindow(Gtk.Window):
             row.add(mini_box)
             self.listbox.add(row)
 
-            # we will need these entry's later when we need to add a new host.
             self.attributeValues.append(entry)
 
         self.buttonBox = Gtk.Box(spacing = 15)
@@ -590,20 +586,13 @@ class EntryWindow(Gtk.Window):
         self.box.pack_start(self.buttonBox, True, True, 0)
         self.show_all()
 
-
-    def testFunc(self, widget):
-        print("test")
-
-
     def exit(self):
         self.destroy()  
         
     def on_file_clicked(self, widget):
         self.destroy()
         # File selection dialog
-        dialog = Gtk.FileChooserDialog(
-            title="Please choose a file", parent=self, action=Gtk.FileChooserAction.OPEN
-        )
+        dialog = Gtk.FileChooserDialog(title="Please choose a file", parent=self, action=Gtk.FileChooserAction.OPEN)
         # Dialog buttons
         dialog.add_buttons(
             Gtk.STOCK_CANCEL,
@@ -613,7 +602,6 @@ class EntryWindow(Gtk.Window):
         )
         #bug was here but fixed :) 
         self.add_filters(dialog)
-
         response = dialog.run()
 
         #catch button click
@@ -690,9 +678,6 @@ def pathManipulation(filePath):
     #tested manipulation
     print(manFileName)
     return manFileName
-
-
-
 
 win = MainWindow()
 win.connect("destroy", Gtk.main_quit)
