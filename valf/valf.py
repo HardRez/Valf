@@ -545,6 +545,7 @@ class FileChooserWindow(Gtk.Window):
 
 ############
 class EntryWindow(Gtk.Window):
+################################test
     def __init__(self):
         self.mandatoryEntries = ['Password']
         self.optionalAttributes = [] # items are Gtk.Entry()
@@ -558,19 +559,24 @@ class EntryWindow(Gtk.Window):
         
         self.listbox = Gtk.ListBox()
         self.box.pack_start(self.listbox, True, True, 0)
+        self.deneme = 15
 
         for column in self.mandatoryEntries:
             row = Gtk.ListBoxRow()
             mini_box = Gtk.Box(spacing = 30)
 
             label = Gtk.Label(label = column)
-            entry = Gtk.Entry()
+
+            self.entry = Gtk.Entry()
+            self.entry.set_visibility(False)
+
             mini_box.pack_start(label, True, True, 0)
-            mini_box.pack_start(entry, True, True, 0)
+            mini_box.pack_start(self.entry, True, True, 0)
+
             row.add(mini_box)
             self.listbox.add(row)
 
-            self.attributeValues.append(entry)
+            self.attributeValues.append(self.entry)
 
         self.buttonBox = Gtk.Box(spacing = 15)
 
@@ -586,11 +592,12 @@ class EntryWindow(Gtk.Window):
         self.box.pack_start(self.buttonBox, True, True, 0)
         self.show_all()
 
-    def exit(self):
-        self.destroy()  
-        
-    def on_file_clicked(self, widget):
+    def exit(self, widget):
         self.destroy()
+
+    def on_file_clicked(self, widget):
+        #print(entval)
+        self.hide()
         # File selection dialog
         dialog = Gtk.FileChooserDialog(title="Please choose a file", parent=self, action=Gtk.FileChooserAction.OPEN)
         # Dialog buttons
@@ -609,17 +616,14 @@ class EntryWindow(Gtk.Window):
             print("Open clicked")
             print("File selected: " + dialog.get_filename())
             fileName = dialog.get_filename()
-            sendFileFunction(fileName)
+            self.sendFileFunction(fileName)
 
         elif response == Gtk.ResponseType.CANCEL:
             print("Cancel clicked")
 
         dialog.destroy()
 
-    def testtt(self, dialog):
-        print("bu dialog tessst")
-
-    def add_filters(self, dialog):
+    def add_filters(self, dialog):    
         #filters for files
         filter_text = Gtk.FileFilter()
         filter_text.set_name("Text files")
@@ -635,49 +639,50 @@ class EntryWindow(Gtk.Window):
         filter_any.set_name("Any files")
         filter_any.add_pattern("*")
         dialog.add_filter(filter_any)
-        
 
-globalPort = "22" 
-def create_connection():
-    #selected item data
-    dataClass = MainWindow()
-    realHostData = dataClass.testedSelectedFunc()
-    print(realHostData['Host'])
-    print(globalPort)
-    #ssh connection
-    connection = paramiko.SSHClient()
-    connection.load_system_host_keys()
-    connection.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    connection.connect(hostname=realHostData['Host'],username=realHostData['Hostname'], password="rez1999", port= globalPort)
+    def create_connection(self):
+        #selected item data
+        dataClass = MainWindow()
+        realHostData = dataClass.testedSelectedFunc()
+        print(realHostData['Host'])
+        #TESTİNG
+        print("FOCUS")
+        print(self.entry.get_text())
+        #ssh connection
+        connection = paramiko.SSHClient()
+        connection.load_system_host_keys()
+        connection.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        connection.connect(hostname=realHostData['Host'],username=realHostData['Hostname'], password=self.entry.get_text(), port= 22)
     
-    return connection
+        return connection
 
-def sendFileFunction(fname):
-    #tested file name
-    print(fname)
-    connection = create_connection()
+    def sendFileFunction(self, fname):
+        #tested file name
+        print(fname)
+        connection = self.create_connection()
 
-    #for find home directory
-    command = "echo $HOME"
-    ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(command)
-    #string manipulation for directory
-    realOut = str(ssh_stdout.readlines())
-    realOut = realOut.replace("\\n", "")
-    realOut = realOut.strip("[]'")
-    print(realOut)
+        #for find home directory
+        command = "echo $HOME"
+        ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(command)
+        #string manipulation for directory
+        realOut = str(ssh_stdout.readlines())
+        realOut = realOut.replace("\\n", "")
+        realOut = realOut.strip("[]'")
+        print(realOut)
 
   
-    #hostData = self.data[self.model.get_path(self.row)[0]]
-    #scp
-    ftp_client = connection.open_sftp()
-    ftp_client.put(fname, realOut + "/" + pathManipulation(fname))
-    ftp_client.close()
+        #hostData = self.data[self.model.get_path(self.row)[0]]
+        #scp
+        ftp_client = connection.open_sftp()
+        ftp_client.put(fname, realOut + "/" + self.pathManipulation(fname))
+        ftp_client.close()
 
-def pathManipulation(filePath):
-    manFileName = os.path.basename(filePath)
-    #tested manipulation
-    print(manFileName)
-    return manFileName
+
+    def pathManipulation(self, filePath):
+        manFileName = os.path.basename(filePath)
+        #tested manipulation
+        print(manFileName)
+        return manFileName
 
 win = MainWindow()
 win.connect("destroy", Gtk.main_quit)
