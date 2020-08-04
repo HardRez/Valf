@@ -4,6 +4,7 @@ import errno
 import paramiko
 import scpclient
 import os.path
+import socket
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Vte" , "2.91")
@@ -543,9 +544,8 @@ class FileChooserWindow(Gtk.Window):
         win = EntryWindow()
         win.show()
 
-############
+############Hardrez Area
 class EntryWindow(Gtk.Window):
-################################test
     def __init__(self):
         self.mandatoryEntries = ['Password']
         self.optionalAttributes = [] # items are Gtk.Entry()
@@ -581,7 +581,7 @@ class EntryWindow(Gtk.Window):
         self.buttonBox = Gtk.Box(spacing = 15)
 
         self.lgnBttn = Gtk.Button.new_with_label("Login")
-        self.lgnBttn.connect("clicked", self.on_file_clicked)
+        self.lgnBttn.connect("clicked", self.create_connection)
      
         self.exitButton = Gtk.Button.new_with_label("Exit")
         self.exitButton.connect("clicked", self.exit)
@@ -595,8 +595,7 @@ class EntryWindow(Gtk.Window):
     def exit(self, widget):
         self.destroy()
 
-    def on_file_clicked(self, widget):
-        #print(entval)
+    def on_file_clicked(self):
         self.hide()
         # File selection dialog
         dialog = Gtk.FileChooserDialog(title="Please choose a file", parent=self, action=Gtk.FileChooserAction.OPEN)
@@ -640,30 +639,36 @@ class EntryWindow(Gtk.Window):
         filter_any.add_pattern("*")
         dialog.add_filter(filter_any)
 
-    def create_connection(self):
+    def create_connection(self, widget):
         #selected item data
         dataClass = MainWindow()
         realHostData = dataClass.testedSelectedFunc()
         print(realHostData['Host'])
         #TESTİNG
-        print("FOCUS")
         print(self.entry.get_text())
         #ssh connection
-        connection = paramiko.SSHClient()
-        connection.load_system_host_keys()
-        connection.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        connection.connect(hostname=realHostData['Host'],username=realHostData['Hostname'], password=self.entry.get_text(), port= 22)
-    
-        return connection
+        self.connection = paramiko.SSHClient()
+        self.connection.load_system_host_keys()
+        self.connection.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        try:
+            self.connection.connect(hostname=realHostData['Host'],username=realHostData['Hostname'], password=self.entry.get_text(), port= 22)
+            print("Perfect")
+            self.on_file_clicked()
+        except Exception:
+            print("Connection fail")
+            self.destroy()
+            testWin = EntryWindow()
+            testWin.show_all()
 
     def sendFileFunction(self, fname):
         #tested file name
         print(fname)
-        connection = self.create_connection()
-
+        #connection = self.create_connection()
+        if(self.chechk_ssh):
+            print("Baglanti SAGLANDİ")
         #for find home directory
         command = "echo $HOME"
-        ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(command)
+        ssh_stdin, ssh_stdout, ssh_stderr = self.connection.exec_command(command)
         #string manipulation for directory
         realOut = str(ssh_stdout.readlines())
         realOut = realOut.replace("\\n", "")
@@ -673,7 +678,7 @@ class EntryWindow(Gtk.Window):
   
         #hostData = self.data[self.model.get_path(self.row)[0]]
         #scp
-        ftp_client = connection.open_sftp()
+        ftp_client = self.connection.open_sftp()
         ftp_client.put(fname, realOut + "/" + self.pathManipulation(fname))
         ftp_client.close()
 
@@ -683,6 +688,18 @@ class EntryWindow(Gtk.Window):
         #tested manipulation
         print(manFileName)
         return manFileName
+    
+    def chechk_ssh(self):
+        dataClass = MainWindow()
+        realHostData = dataClass.testedSelectedFunc()
+        try:
+            test_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            test_socket.connect((realHostData['Host'], 22))
+        except Exception:
+            return False
+        else:
+            test_socket.close()
+            return True
 
 win = MainWindow()
 win.connect("destroy", Gtk.main_quit)
