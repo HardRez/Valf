@@ -4,6 +4,7 @@ import errno
 import paramiko
 import scpclient
 import os.path
+import socket
 
 gi.require_version("Gtk", "3.0")
 gi.require_version("Vte" , "2.91")
@@ -11,6 +12,7 @@ from gi.repository import Gtk, Vte, Gdk
 from gi.repository import GLib
 from paramiko import SSHClient
 from scp import SCPClient
+from pathlib import Path
 
 HOME = "HOME"
 SHELLS = [ "/bin/bash" ]
@@ -24,6 +26,7 @@ class MainWindow(Gtk.Window):
         self.data = []
         self.hostNames = [] 
         self.editListbox = None
+        
         # values from edit section
         # items are Gtk.Entry
         self.editAttributeValues = []
@@ -66,7 +69,7 @@ class MainWindow(Gtk.Window):
         # Render data / build columns
         # only render "host" column
         renderer = Gtk.CellRendererText()
-        column = Gtk.TreeViewColumn("Host" , renderer , text = 0)
+        column = Gtk.TreeViewColumn("Hosts" , renderer , text = 0)
         # column.set_sort_column_id(0) sorting mess things up.
         self.hostTreeView.append_column(column)
         self.hostTreeView.connect("row-activated", self.row_double_click)
@@ -316,16 +319,21 @@ class MainWindow(Gtk.Window):
 
                 elif processedLine[0] != "":
                     self.data[len(self.data) - 1][processedLine[0]] = processedLine[1]
-
         
+    def testedSelectedFunc(self):
+        #print(hostDataSelected)                    
+        return hostDataSelected
+
     def displayRightList(self):
         # reset attribute values.
         self.editAttributeValues = []
         self.editAttributes = []
         # we already know the data and selected index
         if self.row:
+            global hostDataSelected
             hostData = self.data[self.model.get_path(self.row)[0]]
-
+            hostDataSelected = hostData
+            #print(hostData)
             maxKeyLength = 0
             for key in hostData.keys():
                 if len(key) > maxKeyLength:
@@ -352,9 +360,15 @@ class MainWindow(Gtk.Window):
                 self.editAttributes.append(key)        
 
                 self.show_all()
+    
+
+    
+
     def on_click_filechooser(self, widget, event):
         win = FileChooserWindow()
         win.show()
+    
+
 
 class AddHostWindow(Gtk.Window):
     def __init__(self,callback):
@@ -507,7 +521,8 @@ class ConnectionWindow(Gtk.Window):
         self.command = f"ssh {self.data['Host']}\n"
         self.terminal.feed_child_binary(self.command.encode("utf-8"))
         #print(self.terminal.get_text())
-################my
+################HardRez AREA
+#line 328
 class FileChooserWindow(Gtk.Window):
 
     def __init__(self):
@@ -519,41 +534,96 @@ class FileChooserWindow(Gtk.Window):
 
         self.buttonBox = Gtk.Box(spacing = 15)
 
-        self.addAttr = Gtk.Button.new_with_label("Choose file")
-        self.addAttr.connect("clicked", self.on_file_clicked)
-        self.buttonBox.pack_start(self.addAttr, True, True, 0)
+        self.chFile = Gtk.Button.new_with_label("Choose file")
+        self.chFile.connect("clicked", self.show_PasswordWindow)
+        self.buttonBox.pack_start(self.chFile, True, True, 0)
         self.box.pack_start(self.buttonBox, True, True, 0)
         self.show_all()
-    
-    def testFunc(self, widget):
-        print("test")
-    
-    def on_file_clicked(self, widget):
-        dialog = Gtk.FileChooserDialog(
-            title="Please choose a file", parent=self, action=Gtk.FileChooserAction.OPEN
-        )
+
+    def show_PasswordWindow(self, widget):
+        win = EntryWindow()
+        win.show()
+
+############Hardrez Area
+class EntryWindow(Gtk.Window):
+    def __init__(self):
+        self.mandatoryEntries = ['Password']
+        self.optionalAttributes = [] # items are Gtk.Entry()
+        self.attributeValues = [] # items are Gtk.Entry() , mandatory + optional
+
+        Gtk.Window.__init__(self, title="Password Login")
+        self.set_border_width(10)
+        
+        self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.add(self.box)
+        
+        self.listbox = Gtk.ListBox()
+        self.box.pack_start(self.listbox, True, True, 0)
+        self.deneme = 15
+
+        for column in self.mandatoryEntries:
+            row = Gtk.ListBoxRow()
+            mini_box = Gtk.Box(spacing = 30)
+
+            label = Gtk.Label(label = column)
+
+            self.entry = Gtk.Entry()
+            self.entry.set_visibility(False)
+
+            mini_box.pack_start(label, True, True, 0)
+            mini_box.pack_start(self.entry, True, True, 0)
+
+            row.add(mini_box)
+            self.listbox.add(row)
+
+            self.attributeValues.append(self.entry)
+
+        self.buttonBox = Gtk.Box(spacing = 15)
+
+        self.lgnBttn = Gtk.Button.new_with_label("Login")
+        self.lgnBttn.connect("clicked", self.create_connection)
+     
+        self.exitButton = Gtk.Button.new_with_label("Exit")
+        self.exitButton.connect("clicked", self.exit)
+
+        self.buttonBox.pack_start(self.lgnBttn, True, True, 0)  
+        self.buttonBox.pack_start(self.exitButton, True, True, 0)
+
+        self.box.pack_start(self.buttonBox, True, True, 0)
+        self.show_all()
+
+    def exit(self, widget):
+        self.destroy()
+
+    def on_file_clicked(self):
+        self.hide()
+        # File selection dialog
+        dialog = Gtk.FileChooserDialog(title="Please choose a file", parent=self, action=Gtk.FileChooserAction.OPEN)
+        # Dialog buttons
         dialog.add_buttons(
             Gtk.STOCK_CANCEL,
             Gtk.ResponseType.CANCEL,
             Gtk.STOCK_OPEN,
             Gtk.ResponseType.OK,
         )
-
+        #bug was here but fixed :) 
         self.add_filters(dialog)
-
         response = dialog.run()
+
+        #catch button click
         if response == Gtk.ResponseType.OK:
             print("Open clicked")
             print("File selected: " + dialog.get_filename())
             fileName = dialog.get_filename()
-            sendFileFunction(fileName)
+            self.sendFileFunction(fileName)
 
         elif response == Gtk.ResponseType.CANCEL:
             print("Cancel clicked")
 
         dialog.destroy()
 
-    def add_filters(self, dialog):
+    def add_filters(self, dialog):    
+        #filters for files
         filter_text = Gtk.FileFilter()
         filter_text.set_name("Text files")
         filter_text.add_mime_type("text/plain")
@@ -569,26 +639,67 @@ class FileChooserWindow(Gtk.Window):
         filter_any.add_pattern("*")
         dialog.add_filter(filter_any)
 
+    def create_connection(self, widget):
+        #selected item data
+        dataClass = MainWindow()
+        realHostData = dataClass.testedSelectedFunc()
+        print(realHostData['Host'])
+        #TESTİNG
+        print(self.entry.get_text())
+        #ssh connection
+        self.connection = paramiko.SSHClient()
+        self.connection.load_system_host_keys()
+        self.connection.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        try:
+            self.connection.connect(hostname=realHostData['Host'],username=realHostData['Hostname'], password=self.entry.get_text(), port= 22)
+            print("Perfect")
+            self.on_file_clicked()
+        except Exception:
+            print("Connection fail")
+            self.destroy()
+            testWin = EntryWindow()
+            testWin.show_all()
+
+    def sendFileFunction(self, fname):
+        #tested file name
+        print(fname)
+        #connection = self.create_connection()
+        if(self.chechk_ssh):
+            print("Baglanti SAGLANDİ")
+        #for find home directory
+        command = "echo $HOME"
+        ssh_stdin, ssh_stdout, ssh_stderr = self.connection.exec_command(command)
+        #string manipulation for directory
+        realOut = str(ssh_stdout.readlines())
+        realOut = realOut.replace("\\n", "")
+        realOut = realOut.strip("[]'")
+        print(realOut)
+
+  
+        #hostData = self.data[self.model.get_path(self.row)[0]]
+        #scp
+        ftp_client = self.connection.open_sftp()
+        ftp_client.put(fname, realOut + "/" + self.pathManipulation(fname))
+        ftp_client.close()
+
+
+    def pathManipulation(self, filePath):
+        manFileName = os.path.basename(filePath)
+        #tested manipulation
+        print(manFileName)
+        return manFileName
     
-
-def sendFileFunction(fname):
-    print(fname)
-    connection = SSHClient()
-    connection.load_system_host_keys()
-    connection.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    connection.connect(hostname="192.168.1.8",username="hardrez", password="rez1999", port="22")
-    ftp_client = connection.open_sftp()
-    ftp_client.put(fname, '/home/hardrez/' + pathManipulation(fname))
-    ftp_client.close()
-
-def pathManipulation(filePath):
-    manFileName = os.path.basename(filePath)
-    print(manFileName)
-    return manFileName
-############
-
-
-
+    def chechk_ssh(self):
+        dataClass = MainWindow()
+        realHostData = dataClass.testedSelectedFunc()
+        try:
+            test_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            test_socket.connect((realHostData['Host'], 22))
+        except Exception:
+            return False
+        else:
+            test_socket.close()
+            return True
 
 win = MainWindow()
 win.connect("destroy", Gtk.main_quit)
