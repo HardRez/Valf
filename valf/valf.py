@@ -220,9 +220,6 @@ class MainWindow(Gtk.Window):
             newitem1=Gtk.MenuItem('Send File')
             newitem1.connect("button-press-event", self.on_click_filechooser)
             newmenu.append(newitem1)
-            newitem1=Gtk.MenuItem('Test Connection')
-            newitem1.connect("button-press-event", self.testSSHWin)
-            newmenu.append(newitem1)
             newmenu.show_all()
             
             newmenu.attach_to_widget (self.hostTreeView, None)
@@ -234,8 +231,7 @@ class MainWindow(Gtk.Window):
             return True  # event has been handled
         
         
-    def testSSHWin(self, widget, event):
-        win = testSSHWin()
+    
 
     def updateConfig(self):
         with open("config", "w") as fileObject:
@@ -660,31 +656,16 @@ class EntryWindow(Gtk.Window):
             self.on_file_clicked()
         except Exception:
             print("Connection fail")
-            self.connectionFailMessage()
-    
-    def connectionFailMessage(self):
-        dialog = Gtk.MessageDialog(
-            transient_for=self,
-            flags=0,
-            message_type=Gtk.MessageType.ERROR,
-            buttons=Gtk.ButtonsType.CANCEL,
-            text="Login Fail",
-        )
-        dialog.format_secondary_text(
-            "Username or password is wrong"
-        )
-        dialog.run()
-        print("ERROR dialog closed")
-
-        dialog.destroy()
+            self.destroy()
+            testWin = EntryWindow()
+            testWin.show_all()
 
     def sendFileFunction(self, fname):
         #tested file name
         print(fname)
-        #if(self.chechk_ssh):
-         #   print("Baglanti SAGLANDİ")
-        #else:
-         #   print("Baglanti BASARİSİZ")
+        #connection = self.create_connection()
+        if(self.chechk_ssh):
+            print("Baglanti SAGLANDİ")
         #for find home directory
         command = "echo $HOME"
         ssh_stdin, ssh_stdout, ssh_stderr = self.connection.exec_command(command)
@@ -708,32 +689,7 @@ class EntryWindow(Gtk.Window):
         print(manFileName)
         return manFileName
     
-
-class testSSHWin(Gtk.Window):
-    def __init__(self):
-        Gtk.Window.__init__(self, title = "Connection Test")
-        if(self.check_ssh()):
-            tittleTxt = "Connection successful"
-            txt = "You can use ssh protocols"
-        else:
-            tittleTxt = "Connection fail"
-            txt = "Please check the information entered"
-        dialog = Gtk.MessageDialog(
-            transient_for=self,
-            flags=0,
-            message_type=Gtk.MessageType.ERROR,
-            buttons=Gtk.ButtonsType.CANCEL,
-            text=tittleTxt,
-        )
-        dialog.format_secondary_text(
-            txt
-        )
-        dialog.run()
-        print("Info dialog closed")
-
-        dialog.destroy()
-
-    def check_ssh(self):
+    def chechk_ssh(self):
         dataClass = MainWindow()
         realHostData = dataClass.testedSelectedFunc()
         try:
