@@ -55,6 +55,7 @@ class MainWindow(Gtk.Window):
         self.grid.add(self.box)
 
         # create the ListStore
+        
         # convert data to ListStore
         self.hostDataListStore = Gtk.ListStore(str) # 1 column, host names.
 
@@ -65,7 +66,7 @@ class MainWindow(Gtk.Window):
 
         # TreeView the data that is displayed.
         self.hostTreeView = Gtk.TreeView(model = self.hostDataListStore)
-
+        
         # Render data / build columns
         # only render "host" column
         renderer = Gtk.CellRendererText()
@@ -82,7 +83,28 @@ class MainWindow(Gtk.Window):
 
         # add treeview to box
         self.box.pack_start(self.hostTreeView, True, True, 0)
-
+         # show attributes of selected host in the right side (2/3 side)
+        # create an empty label in order to cover 2/3 of the gui.
+        self.rightBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        self.grid.attach(self.rightBox, 1 , 0 , 2, 1)
+        self.editBtnBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        self.editBtnBox2 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        #TESTİNG
+        self.notebook = Gtk.Notebook()
+        self.editBtnBox.pack_start(self.notebook, True, True, 0)
+        self.addAttrBtn = Gtk.Button.new_with_label("Add Attribute")
+        self.addAttrBtn.connect("clicked", self.on_add_attribute)
+        #self.editBtnBox2.pack_start(self.addAttrBtn, True, True, 0)
+        self.deleteAttrBtn = Gtk.Button.new_with_label("Delete Attribute")
+        self.deleteAttrBtn.connect("clicked", self.on_delete_attribute)
+        #self.editBtnBox.pack_start(self.deleteAttrBtn, True, True, 0)
+        self.page1 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        self.page1.set_border_width(10)
+        self.page1.add(self.addAttrBtn)
+        self.page1.add(self.deleteAttrBtn)
+        
+        
+        self.notebook.append_page(self.page1, Gtk.Label(label="Plain Title"))
 
         # create a mini box which contains the buttons.
         # add this minibox to bigger box.
@@ -104,22 +126,25 @@ class MainWindow(Gtk.Window):
         self.saveButton.connect("clicked", self.on_save_clicked)
         self.buttonBox.pack_start(self.saveButton, True, True, 0)
 
-        # show attributes of selected host in the right side (2/3 side)
-        # create an empty label in order to cover 2/3 of the gui.
-        self.rightBox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        self.grid.attach(self.rightBox, 1 , 0 , 2, 1)
+       
 
-
+        #self.page2 = Gtk.Box()
+        #self.page2.set_border_width(10)
+        #self.page2.add(Gtk.Label(label="A page with an image for a Title."))
+        #self.notebook.append_page(self.page2, Gtk.Label(label="Plain Title 2"))
         # add "save button" , add it to the button box.
-        self.editBtnBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        self.addAttrBtn = Gtk.Button.new_with_label("Add Attribute")
-        self.addAttrBtn.connect("clicked", self.on_add_attribute)
-        self.editBtnBox.pack_start(self.addAttrBtn, True, True, 0)
+        
+        """s
+        
 
-        self.deleteAttrBtn = Gtk.Button.new_with_label("Delete Attribute")
-        self.deleteAttrBtn.connect("clicked", self.on_delete_attribute)
-        self.editBtnBox.pack_start(self.deleteAttrBtn, True, True, 0)
+        
+        s"""
+        #Notebook TEST
+
         # add this button to the editbox after listbox gets added to box. It happens inside the function update_selected_host
+
+    def testFunction(self, widget):
+        print("test")
 
     def row_double_click(self, widget, row, col):
         index = row[0]
@@ -220,9 +245,13 @@ class MainWindow(Gtk.Window):
             newitem1=Gtk.MenuItem('Send File')
             newitem1.connect("button-press-event", self.on_click_filechooser)
             newmenu.append(newitem1)
-            newitem1=Gtk.MenuItem('Test Connection')
-            newitem1.connect("button-press-event", self.testSSHWin)
-            newmenu.append(newitem1)
+            newitem2=Gtk.MenuItem('Test Connection')
+            newitem2.connect("button-press-event", self.testSSHWin)
+            newmenu.append(newitem2)
+            newitem3=Gtk.MenuItem('Open Connection')
+            newitem3.connect("button-press-event", self.testRow)
+            newmenu.append(newitem3)
+
             newmenu.show_all()
             
             newmenu.attach_to_widget (self.hostTreeView, None)
@@ -233,7 +262,11 @@ class MainWindow(Gtk.Window):
             
             return True  # event has been handled
         
-        
+    def testRow(self,widget ,selection):
+        self.selectedRow = self.hostTreeView.get_selection()
+        self.selectedRow.connect("changed", self.update_selected_host)
+        self.show_all()
+
     def testSSHWin(self, widget, event):
         win = testSSHWin()
 
@@ -265,6 +298,7 @@ class MainWindow(Gtk.Window):
 
         # display right box
         self.displayRightList()
+        
 
 
     def clearEditListBox(self):
@@ -360,7 +394,7 @@ class MainWindow(Gtk.Window):
                 mini_box.pack_start(entry, True, True, 0)
                 row.add(mini_box)
                 self.editListbox.add(row)
-
+    
                 self.editAttributeValues.append(entry)
                 self.editAttributes.append(key)        
 
