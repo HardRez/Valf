@@ -690,7 +690,8 @@ class EntryWindow(Gtk.Window):
         self.connection.load_system_host_keys()
         self.connection.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
-            self.connection.connect(hostname=realHostData['Host'],username=realHostData['Hostname'], password=self.entry.get_text(), port= 22)
+            ## Bugfix for entry names to connect
+            self.connection.connect(hostname=realHostData['Hostname'],username=realHostData['User'], password=self.entry.get_text(), port= 22)
             print("Perfect")
             self.on_file_clicked()
         except Exception:
