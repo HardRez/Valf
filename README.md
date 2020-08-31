@@ -1,2 +1,2 @@
-# LinuxIsGood
-The whole project is at "valf" directory.
+# Valf
+Projenin çalışır versiyonu valf dizini içinde bulunmaktadır.
